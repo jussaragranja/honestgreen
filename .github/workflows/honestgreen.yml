@@ -1,0 +1,16 @@
+name: Honest Green
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  honestgreen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # This repository checks itself with the local version of the action.
+      - uses: ./
