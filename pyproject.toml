@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "honestgreen"
+version = "0.1.0"
+description = "Detect changes that weaken a test suite: removed, weakened or modified assertions, disabled and deleted tests."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = []
+keywords = ["testing", "qa", "ai-agents", "pytest", "junit", "code-review"]
+
+[project.scripts]
+honestgreen = "honestgreen.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["honestgreen*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

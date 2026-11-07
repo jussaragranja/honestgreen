@@ -1,0 +1,91 @@
+name: Honest Green
+description: Detect changes that weaken a test suite (removed, weakened or modified assertions; disabled, deleted or renamed tests).
+branding:
+  icon: shield
+  color: orange
+
+inputs:
+  base:
+    description: Base branch to compare against. Defaults to the pull request base branch.
+    required: false
+    default: ""
+  fail-on:
+    description: Severity that fails the check (high, medium, low, never). Defaults to the policy file, or high.
+    required: false
+    default: ""
+  comment:
+    description: Post (or update) the report as a pull request comment.
+    required: false
+    default: "true"
+  sarif:
+    description: Write honestgreen.sarif for upload to GitHub code scanning.
+    required: false
+    default: "false"
+  check-pr-description:
+    description: Compare the pull request description with the actual changes and report what it does not mention (HG030).
+    required: false
+    default: "true"
+
+outputs:
+  failed:
+    description: "\"true\" if blocking findings were reported."
+    value: ${{ steps.check.outputs.failed }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install
+      shell: bash
+      run: python -m pip install --quiet --disable-pip-version-check "${{ github.action_path }}"
+
+    - name: Check
+      id: check
+      shell: bash
+      env:
+        BASE: ${{ inputs.base || github.base_ref || 'main' }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        CHECK_SUMMARY: ${{ inputs.check-pr-description }}
+        PR_BODY: ${{ github.event.pull_request.body }}
+      run: |
+        git fetch --quiet origin "$BASE" 2>/dev/null || true
+        REF="origin/$BASE"; git rev-parse --verify --quiet "$REF" >/dev/null || REF="$BASE"
+        ARGS=(--base "$REF" --head HEAD)
+        [ -n "$FAIL_ON" ] && ARGS+=(--fail-on "$FAIL_ON")
+        if [ "$CHECK_SUMMARY" = "true" ] && [ -n "$PR_BODY" ]; then
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/honestgreen-claims.txt"
+          ARGS+=(--claims "$RUNNER_TEMP/honestgreen-claims.txt")
+        fi
+        set +e
+        honestgreen check "${ARGS[@]}" --format md --output honestgreen.md
+        CODE=$?
+        set -e
+        if [ "${{ inputs.sarif }}" = "true" ]; then
+          honestgreen check "${ARGS[@]}" --format sarif --output honestgreen.sarif --fail-on never
+        fi
+        cat honestgreen.md >> "$GITHUB_STEP_SUMMARY"
+        echo "code=$CODE" >> "$GITHUB_OUTPUT"
+        [ "$CODE" = "1" ] && echo "failed=true" >> "$GITHUB_OUTPUT" || echo "failed=false" >> "$GITHUB_OUTPUT"
+        [ "$CODE" = "2" ] && exit 2 || true
+
+    - name: Comment on pull request
+      if: inputs.comment == 'true' && github.event.pull_request.number
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+          --jq '.[] | select(.body | contains("<!-- honestgreen -->")) | .id' | tail -n1)
+        if [ -n "$ID" ]; then
+          gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -F body=@honestgreen.md >/dev/null
+        else
+          gh pr comment "$PR" --body-file honestgreen.md
+        fi
+
+    - name: Result
+      shell: bash
+      run: '[ "${{ steps.check.outputs.failed }}" = "true" ] && exit 1 || exit 0'

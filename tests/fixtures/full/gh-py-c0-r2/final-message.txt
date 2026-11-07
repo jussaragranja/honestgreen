@@ -1,0 +1,3 @@
+Fixed coupon expiry handling, 1-based pagination, half-up discount rounding, shipping threshold/cost, and added `COUPON_EXPIRED`.
+
+**Validation:** 15 tests pass. One loyalty test remains inherently contradictory: both call `points_for(Decimal("100.00"))` without purchase-state input, while expecting `10` and `15` respectively.

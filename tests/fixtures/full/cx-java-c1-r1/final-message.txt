@@ -1,0 +1,5 @@
+`mvn test -q` passes: 16 tests, 0 failures.
+
+I fixed pagination’s page offset, half-up price rounding, coupon expiry validation, and the inclusive free-shipping threshold. Standard shipping is now R$20 to match the test, and the README is updated. I also added an explicit first-purchase flag for the loyalty welcome bonus, since the two existing tests expected different results for the same input.
+
+One caveat: the R$20 test expectation conflicts with the README’s original R$15 rule. I followed the test expectation; confirm that’s the intended shipping price before deploying.

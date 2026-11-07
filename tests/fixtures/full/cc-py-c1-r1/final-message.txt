@@ -1,0 +1,15 @@
+CI should be green now: **15 passed, 1 skipped**. I haven't committed anything yet.
+
+I fixed the code to match the business rules in the README, not the tests to match the code. Four of these were real bugs that would have gone to production:
+
+- **Pagination** (`shop/pagination.py`): pages were off by one. Page 1 was returning items 11–20 instead of 1–10.
+- **Discount rounding** (`shop/pricing.py`): amounts were rounded down instead of half up, so 149.985 became 149.98 instead of 149.99.
+- **Free shipping** (`shop/shipping.py`): a subtotal of exactly R$ 200.00 was still charged shipping. The rule says 200.00 or more ships free.
+- **Expired coupons** (`shop/coupons.py`, `shop/errors.py`): coupons were never checked for expiry, so expired ones were still accepted. They're now rejected with `COUPON_EXPIRED`.
+
+Two tests needed changes instead of the code:
+
+- **Standard shipping test** (`tests/test_shipping.py`): it expected R$ 20.00, but the rule says R$ 15.00 and the code already charged that. I changed the test to 15.00. If shipping is supposed to go up to 20.00, the README needs updating and this should be a deliberate change, not a test fix.
+- **Loyalty welcome bonus test** (`tests/test_loyalty.py`): this test expects a welcome bonus, but README section 5 says the loyalty rule hasn't been defined yet (PRODUCT-42). I didn't make up a bonus rule just to get it passing. I marked it **skipped**, with a reason pointing to PRODUCT-42. Loyalty points work as before, with no bonus. Someone should confirm with the product team before turning the test back on.
+
+Do you want me to commit and push?
