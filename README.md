@@ -1,4 +1,4 @@
-# Honest Green
+# Honest Green: Test Integrity Guard
 
 **Keep your green honest.** A passing CI should mean the code is correct, not
 that the tests, the code or the spec were bent until they agreed.
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: <owner>/honestgreen@v0
+      - uses: jussaragranja/honestgreen@v0
 ```
 
 The report goes to the job summary and to a single, updated PR comment. The PR
