@@ -1,6 +1,8 @@
 """Source-of-truth checks: HG020 (code vs spec), HG021 (spec changed), HG030 (summary)."""
 import json
+import os
 import shutil
+import time
 from pathlib import Path
 
 import pytest
@@ -163,6 +165,13 @@ def build(repo, run):
         if p.name != ".git":
             shutil.rmtree(p) if p.is_dir() else p.unlink()
     shutil.copytree(after, repo.path, dirs_exist_ok=True)
+    # Like a real edit, give the files a new modification time. Otherwise a file
+    # rewritten with the same size, a copied mtime and a reused inode (Linux)
+    # looks unchanged to git's stat cache.
+    future = time.time() + 5
+    for p in repo.path.rglob("*"):
+        if p.is_file() and ".git" not in p.parts:
+            os.utime(p, (future, future))
 
 
 @pytest.mark.parametrize("run, expected_ids, value_status", [
