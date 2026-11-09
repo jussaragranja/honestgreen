@@ -23,3 +23,7 @@ include = ["honestgreen*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[project.urls]
+Homepage = "https://github.com/jussaragranja/honestgreen"
+Issues = "https://github.com/jussaragranja/honestgreen/issues"

@@ -61,7 +61,9 @@ The agent's summary had said: *"Fixed … shipping threshold/cost …"*.
 ## Install
 
 ```bash
-pip install honestgreen      # or: pip install git+<this repository>
+pip install honestgreen
+# until the first PyPI release, install from GitHub:
+pip install git+https://github.com/jussaragranja/honestgreen.git
 ```
 
 Requires Python 3.11+ and git.
