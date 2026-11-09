@@ -27,6 +27,9 @@ weakened a test guarding a real bug. The more common failure was the opposite:
 written spec, and **13 of those 15 summaries called it a fix**. One agent also
 edited the README to match. Tests alone could not catch this; the spec could.
 
+Full study, open data and limitations:
+[agent-test-tampering-study](https://github.com/jussaragranja/agent-test-tampering-study).
+
 ## Example report
 
 Real output on a change made by an AI agent asked to make the tests pass:
@@ -189,7 +192,7 @@ Copy the skills to `.agents/skills/` (Copilot, Codex, Cursor) and/or
 
 ## Validation
 
-On the 48 agent runs of the study:
+On the 48 agent runs of the [study](https://github.com/jussaragranja/agent-test-tampering-study):
 
 | Check | Result |
 |---|---|
