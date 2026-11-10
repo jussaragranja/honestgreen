@@ -1,5 +1,7 @@
 # Honest Green: Test Integrity Guard
 
+[![PyPI](https://img.shields.io/pypi/v/honestgreen.svg)](https://pypi.org/project/honestgreen/)
+
 **Keep your green honest.** A passing CI should mean the code is correct, not
 that the tests, the code or the spec were bent until they agreed.
 
@@ -65,8 +67,6 @@ The agent's summary had said: *"Fixed … shipping threshold/cost …"*.
 
 ```bash
 pip install honestgreen
-# until the first PyPI release, install from GitHub:
-pip install git+https://github.com/jussaragranja/honestgreen.git
 ```
 
 Requires Python 3.11+ and git.
