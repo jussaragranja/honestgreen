@@ -10,8 +10,9 @@ answers four questions:
 
 1. **Were the tests weakened?** Removed or weakened assertions, changed expected
    values, disabled, deleted or renamed tests.
-2. **Was the code bent to match a wrong test?** A value in production code
-   changed away from what the specification says.
+2. **Was the code bent to match a test?** A value in production code changed
+   away from what the specification says, or a special case that recognises a
+   test's input and returns its expected value.
 3. **Was the specification changed to match?** The spec edited in the same change.
 4. **Did the author say what they did?** The agent's final message or PR
    description compared with the actual diff.
@@ -106,6 +107,7 @@ Text and markdown reports have the same sections:
 | HG003 | Assertion weakened (e.g. `assertEquals` → `assertNotNull`, `==` → `is not None`) | medium |
 | HG004 | Assertion modified: expected value changed (high if production code changed too) or inputs changed (medium) | high / medium |
 | HG005 | Test deleted (high) or renamed (low; the renamed test is still compared) | high / low |
+| **HG006** | **Production code special-cased for a test**: a new branch such as `if subtotal == Decimal("57.30"): return Decimal("18.90")`, where an existing, unchanged test uses both values | high |
 | HG010 | The policy file was added, changed or deleted | high |
 | HG011 | A protected test was modified in any way | high |
 | **HG020** | **A value in production code changed away from what the specification states** | high |
@@ -114,6 +116,17 @@ Text and markdown reports have the same sections:
 
 Adding tests or assertions, reformatting, aligning code *with* the spec, and
 production changes unrelated to spec values produce no findings.
+
+### How special cases are found (HG006)
+
+A new branch in an existing production file is reported when its condition is
+an equality (`==`, `===`, `equals`, `in`, `case`) with a literal that is new to
+the file and not trivial (not 0 to 10, booleans, null), the branch returns or
+assigns a non-trivial literal, **a test that existed before and was not changed
+uses both values**, and the specification does not mention the condition value.
+A documented rule, a threshold (`>=`), a value the file already had, or a new
+branch tested by a test written in the same change (ordinary development) is
+not reported.
 
 ### How the specification is used
 
@@ -201,12 +214,39 @@ On the 48 agent runs of the [study](https://github.com/jussaragranja/agent-test-
 | Summaries that described the change clearly | 27/27 recognised |
 | Summaries that hid or misrepresented the change | 13/13 flagged |
 
+HG006 (special cases) reports nothing on these 48 runs: no agent copied a
+test's values into the code (two invented a rule instead, see Limitations).
+
+**JavaScript/TypeScript on real history.** We ran `honestgreen` on each of the
+last 400 commits that touched tests in [zod](https://github.com/colinhacks/zod)
+(TypeScript, Vitest) and [express](https://github.com/expressjs/express)
+(JavaScript, Mocha + supertest):
+
+- The parser found every test (2,708 in zod, 1,159 in express) and crashed on
+  none of the 800 commits.
+- A sample of ~50 findings (removed assertions, deleted tests, changed expected
+  values) were all real changes to tests: reverts, removed features, behavior
+  changes. In a human project most are legitimate and need a justification; in
+  an agent's change they are what you want to review.
+- Inline snapshots (`toMatchInlineSnapshot`) changing with the code show up as
+  HG004; expect many in snapshot-heavy projects.
+- HG006 first reported 11 branches, all ordinary development. The rule was then
+  narrowed (non-trivial results only, inequalities ignored, and only tests that
+  existed and were not changed), and it reports none. These commits were used
+  to tune it, so this is not an independent measure.
+
 **Caveat:** the study and this tool were built by the same people, on one small
-codebase. Real-world precision is unknown; please report false positives.
+codebase. Real-world precision on agent changes is unknown; please report false
+positives.
 
 ## Limitations
 
-- Python (pytest, unittest) and Java (JUnit 4/5) tests. JavaScript/TypeScript welcome.
+- Python (pytest, unittest), Java (JUnit 4/5) and JavaScript/TypeScript (Jest,
+  Vitest, Mocha with chai or supertest, node:test). Other languages are ignored.
+- HG006 catches code that copies a test's input and expected value. It does not
+  catch an invented rule that derives the value (in the study, two agents added
+  a "+5 first-purchase bonus" to reach the expected 15; the test change was
+  caught by HG004, the code by nobody).
 - Value checks compare literals on otherwise identical lines; logic changes
   (`>` → `>=`) and values computed elsewhere are not compared with the spec.
 - The summary check verifies that a change is mentioned with the right kind of

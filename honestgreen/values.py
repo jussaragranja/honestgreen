@@ -113,12 +113,13 @@ class Mention:
     text: str
 
 
-def mentions(spec_files: dict[str, str], value: str, context: set[str]) -> list[Mention]:
-    """Spec lines that contain `value` and share at least one word with the code context."""
+def mentions(spec_files: dict[str, str], value: str, context: set[str] | None) -> list[Mention]:
+    """Spec lines that contain `value` and share at least one word with the code context
+    (any line when context is None)."""
     found = []
     for path, text in spec_files.items():
         for n, line in enumerate(text.splitlines(), 1):
-            if not (context & words(line)):
+            if context is not None and not (context & words(line)):
                 continue
             values = {normalize(v) for v in SPEC_NUMBER.findall(line)}
             values |= {normalize(t) for t in re.findall(r"[`'\"]([^`'\"]+)[`'\"]", line)}

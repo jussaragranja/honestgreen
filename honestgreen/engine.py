@@ -1,7 +1,7 @@
 """Run all checks over the changes between a base ref and HEAD (or the working tree).
 
 Two questions are answered:
-  1. Were the tests weakened?                      (HG001-HG005, HG010, HG011)
+  1. Were the tests weakened, or the code bent to them?  (HG001-HG006, HG010, HG011)
   2. Is the source of truth still the source of truth?
        - production values that now contradict the spec (HG020)
        - the spec itself changed, possibly to match the code (HG021)
@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from honestgreen import claims as claims_mod
-from honestgreen import gitio, justify
+from honestgreen import gitio, justify, special_cases
 from honestgreen.detectors import TITLES, compare_file
 from honestgreen.model import Finding, severity_rank
 from honestgreen.parsers import is_test_file, language, parse
@@ -106,6 +106,21 @@ def _test_expectations(repo: Path, head: str | None, policy: Policy, base_commit
     return out
 
 
+def _head_test_literals(repo: Path, head: str | None, policy: Policy, base_commit: str) -> dict[str, set[str]]:
+    """{test name: normalized literals in its source} over the head version of all test files."""
+    paths = gitio.files_at(repo, head) if head else gitio.files_at(repo, base_commit) + [
+        c.new_path for c in gitio.changes(repo, base_commit, None) if c.new_path]
+    out: dict[str, set[str]] = {}
+    for path in sorted(set(paths)):
+        if not is_test_file(path, policy.test_patterns):
+            continue
+        src = gitio.read_head(repo, head, path)
+        if src:
+            for test in parse(src, path).values():
+                out[test.name] = set(special_cases.literals(test.source))
+    return out
+
+
 def run(repo: Path, base: str, head: str | None, policy: Policy,
         claims_text: str | None = None) -> Result:
     head_ref = head or "HEAD"
@@ -120,6 +135,7 @@ def run(repo: Path, base: str, head: str | None, policy: Policy,
         added, removed = stats.get(path, (0, 0))
         result.files.append(FileChange(path, classify(path, policy), c.status, added, removed))
     production_changed = any(f.kind == "production" for f in result.files)
+    changed_tests: set[str] = set()   # tests added or modified in this change
 
     # ------------------------------------------------------------ 1. tests
     for c in changes:
@@ -142,6 +158,8 @@ def run(repo: Path, base: str, head: str | None, policy: Policy,
         findings, before_tests, after_tests = compare_file(
             before_src, after_src, c.old_path or c.new_path, c.new_path or c.old_path,
             production_changed)
+        changed_tests |= {n for n, t in after_tests.items()
+                          if n not in before_tests or before_tests[n].source != t.source}
 
         protected = policy.is_protected(c.old_path or "") or policy.is_protected(c.new_path or "")
         if protected:
@@ -156,6 +174,34 @@ def run(repo: Path, base: str, head: str | None, policy: Policy,
             if protected:
                 f.protected = True
             result.findings.append(f)
+
+    # ------------------------------------------------------------ 1b. code special-cased for a test (HG006)
+    spec_paths = {p for p in gitio.files_at(repo, base_commit) if is_spec_file(p, policy.spec_patterns)} | {
+        f.path for f in result.files if f.kind == "spec" and f.status != "D"}
+    test_literals: dict[str, set[str]] | None = None
+    for c in changes:
+        path = c.new_path or c.old_path
+        if classify(path, policy) != "production" or not c.old_path or not c.new_path:
+            continue
+        cases = special_cases.find(gitio.read_at(repo, base_commit, c.old_path),
+                                   gitio.read_head(repo, head, c.new_path))
+        if not cases:
+            continue
+        if test_literals is None:
+            test_literals = _head_test_literals(repo, head, policy, base_commit)
+            head_spec_text = {p: gitio.read_head(repo, head, p) or "" for p in sorted(spec_paths)}
+        for case in cases:
+            tests = [t for t in special_cases.matching_tests(case, test_literals) if t not in changed_tests]
+            if not tests or any(mentions(head_spec_text, v, None) for v in case.conditions):
+                continue
+            result.findings.append(Finding(
+                id="HG006", title=TITLES["HG006"], severity="high",
+                file=path, line=case.line, test=tests[0],
+                message=f"New branch for {', '.join(case.conditions)} → {', '.join(case.results)}: "
+                        f"the input and the expected value of {', '.join(tests[:3])}, which this change "
+                        "did not modify. Code that recognises a test's input and returns its expected "
+                        "value makes the test pass without implementing the rule.",
+                after=case.text))
 
     # ------------------------------------------------------------ 2. source of truth
     base_spec_paths = [p for p in gitio.files_at(repo, base_commit) if is_spec_file(p, policy.spec_patterns)]

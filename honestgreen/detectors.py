@@ -20,6 +20,7 @@ TITLES = {
     "HG003": "Assertion weakened",
     "HG004": "Assertion modified",
     "HG005": "Test deleted or renamed",
+    "HG006": "Production code special-cased for a test",
     "HG010": "Integrity policy changed",
     "HG011": "Protected test modified",
     "HG020": "Code contradicts specification",

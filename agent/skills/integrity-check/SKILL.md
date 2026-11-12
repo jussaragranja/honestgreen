@@ -2,7 +2,7 @@
 name: integrity-check
 description: Audit the current changes before declaring a task done — tests
   weakened, disabled, deleted or renamed; production values changed against
-  the specification; the specification edited to match. Use before finishing
+  the specification or special-cased for a test; the specification edited to match. Use before finishing
   any task that made failing tests pass, before opening a pull request, or
   when asked whether tests or rules were bent to get CI green.
 ---
@@ -30,6 +30,10 @@ ability to detect bugs.
    - **Code bent to a wrong test (HG020)**: production now contradicts the
      specification. Revert the value; the test is probably wrong — correct it
      and justify (or report it if you are not sure which one is right).
+   - **Special case for a test (HG006)**: production code recognises the
+     test's input and returns its expected value. Remove the branch and
+     implement the actual rule; if the rule is unknown, leave the test failing
+     and report it.
    - **Specification edited (HG021)**: never change the spec to make tests pass.
      Revert it unless the user asked for the requirement change.
    - **Legitimate**: the test contradicts the specification, or the requirement
