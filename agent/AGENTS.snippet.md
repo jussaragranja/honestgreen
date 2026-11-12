@@ -9,11 +9,12 @@ were changed until they passed.
 1. When a test fails, assume the production code is wrong first.
    Fix the code, not the test.
 2. Never disable, skip, or delete a test to make a build pass
-   (`@Disabled`, `@Ignore`, `pytest.mark.skip`, `xfail`, `pytest.skip()`).
+   (`@Disabled`, `@Ignore`, `pytest.mark.skip`, `xfail`, `pytest.skip()`,
+   `it.skip`, `xit`, `test.todo`, `test.failing`).
 3. Never weaken an assertion, change an expected value, or widen a
    tolerance unless the test itself is demonstrably wrong.
 4. Never add special-case logic in production code that only exists
-   to satisfy a specific test input.
+   to satisfy a specific test input (reported as HG006).
 5. The specification (README, docs, API contracts) outranks the tests. Never
    change production behavior or the specification to agree with a test that
    contradicts it: the test is what is wrong. Correct the test, then use the

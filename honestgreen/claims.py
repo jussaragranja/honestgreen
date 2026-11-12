@@ -19,6 +19,7 @@ ACTION_WORDS = {
     "HG003": r"weaken|loosen|relax|less strict|replac",
     "HG004": r"chang|updat|correct|align|adjust|modif|edit|rewr|expect",
     "HG005": r"delet|remov|drop|renam|replac",
+    "HG006": r"special.?case|hard.?cod|test (input|value)|for the test|only for|stub",
     "HG010": r"polic",
     "HG011": r"chang|updat|modif|edit",
     "HG020": r"spec|readme|document|conflict|contradict|instead of|mismatch|followed the test|match the test",

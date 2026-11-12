@@ -5,12 +5,17 @@ import fnmatch
 from pathlib import PurePosixPath
 
 from honestgreen.model import TestCase
-from honestgreen.parsers import java_parser, python_parser
+from honestgreen.parsers import java_parser, js_parser, python_parser
+
+JS_EXTENSIONS = (".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts")
 
 DEFAULT_TEST_PATTERNS = (
     "test_*.py", "*_test.py", "tests/**/*.py", "**/tests/**/*.py",
     "src/test/**/*.java", "**/src/test/**/*.java", "*Test.java", "*Tests.java", "*IT.java",
-)
+) + tuple(p for ext in JS_EXTENSIONS for p in (
+    f"*.test{ext}", f"*.spec{ext}", f"__tests__/*{ext}", f"**/__tests__/*{ext}", f"**/__tests__/**/*{ext}", f"__tests__/**/*{ext}",
+    f"test/*{ext}", f"test/**/*{ext}", f"tests/*{ext}", f"tests/**/*{ext}",
+))
 
 
 def language(path: str) -> str | None:
@@ -18,6 +23,8 @@ def language(path: str) -> str | None:
         return "python"
     if path.endswith(".java"):
         return "java"
+    if path.endswith(JS_EXTENSIONS) and not path.endswith((".d.ts", ".d.mts", ".d.cts")):
+        return "javascript"
     return None
 
 
@@ -34,4 +41,6 @@ def parse(source: str, path: str) -> dict[str, TestCase]:
         return python_parser.parse(source, path)
     if lang == "java":
         return java_parser.parse(source, path)
+    if lang == "javascript":
+        return js_parser.parse(source, path)
     return {}

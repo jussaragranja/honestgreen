@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "honestgreen"
-version = "0.1.0"
+version = "0.2.0"
 description = "Detect changes that weaken a test suite: removed, weakened or modified assertions, disabled and deleted tests."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = []
-keywords = ["testing", "qa", "ai-agents", "pytest", "junit", "code-review"]
+keywords = ["testing", "qa", "ai-agents", "pytest", "junit", "jest", "vitest", "code-review"]
 
 [project.scripts]
 honestgreen = "honestgreen.cli:main"
